@@ -53,3 +53,22 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+
+
+if __name__ == "__main__":
+    # Start with `python -m app.main` locally and on any host.
+    import os
+
+    import uvicorn
+
+    uvicorn.run(
+        "app.main:app",
+        # Hosts like Render must reach the app from outside the container.
+        host="0.0.0.0" if settings.is_production else "127.0.0.1",
+        # Render/Railway/Fly assign the port via $PORT.
+        port=int(os.getenv("PORT", "8000")),
+        # Trust the host's proxy so the app knows requests arrived over https.
+        proxy_headers=True,
+        forwarded_allow_ips="*",
+        reload=not settings.is_production,
+    )

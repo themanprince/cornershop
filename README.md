@@ -9,7 +9,7 @@ Paystack (test mode), Brevo email. See `SPEC.md` for the full spec.
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 cp .env.example .env        # fill in every value
-.venv/bin/python main.py
+.venv/bin/python -m app.main
 ```
 
 Open http://localhost:8000/health. It should return `{"status":"ok"}`.
