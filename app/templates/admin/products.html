@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Products · Admin{% endblock %}
+{% block content %}
+  {% with active = "products" %}{% include "admin/_nav.html" %}{% endwith %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">Products</h1>
+    <a href="/admin/products/new" class="btn btn-primary">New product</a>
+  </div>
+  {% if not products %}
+    <p class="text-muted">No products yet.</p>
+  {% else %}
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead>
+          <tr><th></th><th>Name</th><th>Price</th><th>Stock</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for product in products %}
+            <tr>
+              <td>
+                {% if product.image_url and product.image_url is not video %}
+                  <img src="{{ product.image_url }}" alt="" class="admin-thumb">
+                {% elif product.image_url %}
+                  <span class="badge text-bg-light">video</span>
+                {% endif %}
+              </td>
+              <td>{{ product.name }}</td>
+              <td class="text-nowrap">{{ product.price_kobo | naira }}</td>
+              <td>{{ product.stock }}</td>
+              <td>
+                {% if product.is_active %}
+                  <span class="badge text-bg-success">Active</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">Inactive</span>
+                {% endif %}
+              </td>
+              <td class="text-end text-nowrap">
+                <a href="/admin/products/{{ product.id }}/edit" class="btn btn-sm btn-outline-primary">Edit</a>
+                {% if product.is_active %}
+                  <form method="post" action="/admin/products/{{ product.id }}/delete" class="d-inline"
+                        onsubmit="return confirm('Deactivate this product? Customers will no longer see it.')">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Deactivate</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+{% endblock %}

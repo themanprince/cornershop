@@ -1,5 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
-  <h1 class="h3">Welcome to Cornershop</h1>
-  <p class="text-muted">Products coming soon.</p>
+  <h1 class="h3 mb-4">Shop</h1>
+  {% if not products %}
+    <p class="text-muted">No products yet. Check back soon.</p>
+  {% else %}
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+      {% for product in products %}
+        <div class="col">
+          <a href="/products/{{ product.id }}" class="card h-100 text-decoration-none text-body shadow-sm">
+            {% with css = "product-img card-img-top" %}{% include "shop/_media.html" %}{% endwith %}
+            <div class="card-body">
+              <h2 class="h6 card-title mb-1">{{ product.name }}</h2>
+              <p class="fw-semibold mb-0">{{ product.price_kobo | naira }}</p>
+              {% if product.stock == 0 %}
+                <span class="badge text-bg-secondary mt-2">Out of stock</span>
+              {% endif %}
+            </div>
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
 {% endblock %}
