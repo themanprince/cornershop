@@ -1,0 +1,10 @@
+Authlib==1.8.0
+fastapi==0.142.2
+httpx==0.28.1
+itsdangerous==2.2.0
+Jinja2==3.1.6
+psycopg[binary]==3.3.6
+python-dotenv==1.2.4
+python-multipart==0.0.32
+SQLAlchemy==2.1.1
+uvicorn[standard]==0.54.0
