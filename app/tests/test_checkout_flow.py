@@ -306,3 +306,14 @@ def test_webhook_and_callback_together_pay_once(db, db_client, buyer, paystack, 
     assert "Payment successful" in resp.text
     assert stock_of(db, rice) == 3
     assert len(emails) == 1
+
+
+def test_callback_for_cancelled_order_explains_refund(db, db_client, buyer, paystack, emails):
+    _, order = start_checkout(db, db_client, paystack)
+    order.status = "cancelled"
+    db.commit()
+    paystack.paid[order.paystack_reference] = order.total_kobo
+
+    resp = db_client.get(f"/payments/callback?reference={order.paystack_reference}")
+    assert "cancelled" in resp.text and "refund" in resp.text
+    assert only_order(db).status == "cancelled"

@@ -28,15 +28,19 @@
           {% if user %}
             {% set count = cart_count(request) %}
             <li class="nav-item"><a class="nav-link" href="/shop">Shop</a></li>
+            <li class="nav-item"><a class="nav-link" href="/orders">My orders</a></li>
             <li class="nav-item">
               <a class="nav-link" href="/cart" data-cart-count="{{ count }}">
                 <i class="bi bi-cart3" aria-hidden="true"></i> Cart
                 {% if count %}<span class="badge rounded-pill text-bg-warning">{{ count }}</span>{% endif %}
               </a>
             </li>
-            {% if user.is_admin %}
-              <li class="nav-item"><a class="nav-link" href="/admin/products">Admin</a></li>
-            {% endif %}
+            <li class="nav-item">
+              {# Shown to everyone for the assignment demo; /admin itself still checks ADMIN_EMAILS. #}
+              <a class="btn btn-warning btn-sm my-2 my-md-0" href="/admin">
+                <i class="bi bi-speedometer2 me-1" aria-hidden="true"></i>Admin dashboard
+              </a>
+            </li>
             <li class="nav-item d-flex align-items-center gap-2 py-2 py-md-0">
               {% if user.avatar_url %}
                 <img src="{{ user.avatar_url }}" alt="" class="avatar" referrerpolicy="no-referrer">

@@ -12,15 +12,12 @@ from app.models import Order
 from app.routes.shop import SHIPPING_SESSION_KEY
 from app.services import payments
 from app.services.cart import clear_cart
-from app.services.orders import mark_order_paid
+from app.services.orders import PAID_STATUSES, mark_order_paid
 from app.templating import templates
 
 log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/payments")
-
-PAID_STATUSES = {"paid", "shipped", "delivered"}
-
 
 def _order_by_reference(db: Session, reference: str) -> Order | None:
     if not reference:
@@ -41,7 +38,8 @@ async def payment_callback(
     if order is None or order.user_id != user["id"]:
         raise HTTPException(status_code=404)
 
-    if order.status == "pending":
+    # A cancelled order is still checked: if it was paid anyway, it gets flagged for a refund.
+    if order.status == "pending" or (order.status == "cancelled" and order.paid_at is None):
         try:
             data = await payments.verify_transaction(reference)
         except payments.PaymentError:
@@ -56,6 +54,8 @@ async def payment_callback(
         clear_cart(request.session)
         request.session.pop(SHIPPING_SESSION_KEY, None)
         outcome = "paid"
+    elif order.status == "cancelled":
+        outcome = "cancelled"
     else:
         outcome = "failed"
     return templates.TemplateResponse(

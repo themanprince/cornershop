@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<body style="font-family: Arial, Helvetica, sans-serif; color: #212529; line-height: 1.5;">
+  <div style="max-width: 560px; margin: 0 auto; padding: 24px;">
+    {% if kind == "shipped" %}
+      <h1 style="font-size: 22px; margin: 0 0 8px;">Your order is on its way</h1>
+      <p>Good news! Order <strong>#{{ order.id }}</strong> has been shipped and is on its way to:</p>
+    {% elif kind == "delivered" %}
+      <h1 style="font-size: 22px; margin: 0 0 8px;">Your order has been delivered</h1>
+      <p>Order <strong>#{{ order.id }}</strong> has been delivered to the address below. We hope you enjoy it,
+        and thank you for shopping with Cornershop.</p>
+    {% elif kind == "cancelled" %}
+      <h1 style="font-size: 22px; margin: 0 0 8px;">Your order has been cancelled</h1>
+      <p>Order <strong>#{{ order.id }}</strong> has been cancelled. We'll refund the
+        <strong>{{ order.total_kobo | naira }}</strong> you paid to your original payment method.
+        How long it takes to show up depends on your bank.</p>
+    {% elif kind == "paid_after_cancel" %}
+      <h1 style="font-size: 22px; margin: 0 0 8px;">We're refunding your payment</h1>
+      <p>We received your payment of <strong>{{ order.total_kobo | naira }}</strong> for order
+        <strong>#{{ order.id }}</strong>, but that order had already been cancelled, so it won't be delivered.
+        We'll refund the full amount to your original payment method.</p>
+    {% endif %}
+
+    <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 16px;">
+      {% for item in order.items %}
+        <tr style="border-bottom: 1px solid #dee2e6;">
+          <td style="padding: 8px 0;">{{ item.product_name }} × {{ item.quantity }}</td>
+          <td style="padding: 8px 0; text-align: right;">{{ (item.unit_price_kobo * item.quantity) | naira }}</td>
+        </tr>
+      {% endfor %}
+      <tr>
+        <td style="padding: 12px 0; font-weight: bold;">Total</td>
+        <td style="padding: 12px 0; text-align: right; font-weight: bold;">{{ order.total_kobo | naira }}</td>
+      </tr>
+    </table>
+
+    {% if kind in ("shipped", "delivered") %}
+      <p style="margin: 16px 0 0; white-space: pre-line;">{{ order.shipping_name }}
+{{ order.shipping_phone }}
+{{ order.shipping_address }}</p>
+    {% endif %}
+
+    <p style="margin: 24px 0;">
+      <a href="{{ base_url }}/orders/{{ order.id }}" style="background: #0d6efd; color: #fff; padding: 10px 18px;
+         border-radius: 6px; text-decoration: none; display: inline-block;">View your order</a>
+    </p>
+    <p style="color: #6c757d; font-size: 13px;">
+      Questions? Reply to this email or contact {{ support_email }}.
+    </p>
+  </div>
+</body>
+</html>

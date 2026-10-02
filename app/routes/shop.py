@@ -3,12 +3,12 @@ import re
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.auth import require_user
 from app.config import settings
 from app.db import get_db
-from app.models import Product
+from app.models import Order, Product
 from app.services import cart, payments
 from app.services.orders import ShippingDetails, create_pending_order
 from app.templating import flash, templates
@@ -167,3 +167,25 @@ async def checkout_submit(
 
     # The cart is cleared only once the payment is verified.
     return RedirectResponse(checkout_url, status_code=303)
+
+
+@router.get("/orders")
+def my_orders(request: Request, db: Session = Depends(get_db), user: dict = Depends(require_user)):
+    orders = db.scalars(
+        select(Order)
+        .where(Order.user_id == user["id"])
+        .options(selectinload(Order.items))
+        .order_by(Order.created_at.desc())
+    ).all()
+    return templates.TemplateResponse(request, "shop/orders.html", {"orders": orders})
+
+
+@router.get("/orders/{order_id}")
+def my_order_detail(
+    order_id: int, request: Request, db: Session = Depends(get_db), user: dict = Depends(require_user)
+):
+    order = db.get(Order, order_id)
+    # 404 rather than 403, so order numbers of other customers aren't confirmed to exist.
+    if order is None or order.user_id != user["id"]:
+        raise HTTPException(status_code=404)
+    return templates.TemplateResponse(request, "shop/order_detail.html", {"order": order})

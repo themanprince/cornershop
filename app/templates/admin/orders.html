@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Orders · Admin{% endblock %}
+{% block content %}
+  {% with active = "orders" %}{% include "admin/_nav.html" %}{% endwith %}
+  <h1 class="h4 mb-3">Orders</h1>
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    <a href="/admin/orders" class="btn btn-sm {{ 'btn-dark' if not status else 'btn-outline-secondary' }}">All</a>
+    {% for s in statuses %}
+      <a href="/admin/orders?status={{ s }}" class="btn btn-sm {{ 'btn-dark' if status == s else 'btn-outline-secondary' }}">{{ STATUS_BADGES[s][0] if s != "pending" else "Awaiting payment" }}</a>
+    {% endfor %}
+  </div>
+  {% if not orders %}
+    <p class="text-muted">No orders{{ " with this status" if status }} yet.</p>
+  {% else %}
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead>
+          <tr><th>Order</th><th>Customer</th><th>Placed</th><th>Total</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% for order in orders %}
+            <tr>
+              <td>
+                <a href="/admin/orders/{{ order.id }}">#{{ order.id }}</a>
+                {% if order.admin_note %}<i class="bi bi-exclamation-triangle-fill text-warning" title="{{ order.admin_note }}"></i>{% endif %}
+              </td>
+              <td>
+                <div>{{ order.shipping_name }}</div>
+                <div class="small text-muted">{{ order.user.email }}</div>
+              </td>
+              <td class="text-nowrap small">{{ order.created_at | local_datetime }}</td>
+              <td class="text-nowrap">{{ order.total_kobo | naira }}</td>
+              <td>{% with status = order.status %}{% include "shop/_status_badge.html" %}{% endwith %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+{% endblock %}

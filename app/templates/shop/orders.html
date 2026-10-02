@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}My orders · Cornershop{% endblock %}
+{% block content %}
+  <h1 class="h3 mb-4">My orders</h1>
+  {% if not orders %}
+    <div class="text-center py-5">
+      <i class="bi bi-receipt empty-icon text-muted" aria-hidden="true"></i>
+      <p class="text-muted mt-2">You haven't placed any orders yet.</p>
+      <a href="/shop" class="btn btn-primary">Start shopping</a>
+    </div>
+  {% else %}
+    <div class="list-group shadow-sm">
+      {% for order in orders %}
+        <a href="/orders/{{ order.id }}" class="list-group-item list-group-item-action py-3">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <div class="min-w-0">
+              <div class="fw-semibold">Order #{{ order.id }}</div>
+              <div class="small text-muted">{{ order.created_at | local_datetime }}</div>
+              <div class="small text-muted text-truncate">
+                {% for item in order.items %}{{ item.product_name }} × {{ item.quantity }}{{ ", " if not loop.last }}{% endfor %}
+              </div>
+            </div>
+            <div class="text-end flex-shrink-0">
+              <div class="fw-semibold">{{ order.total_kobo | naira }}</div>
+              {% with status = order.status %}{% include "shop/_status_badge.html" %}{% endwith %}
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}

@@ -1,5 +1,7 @@
 import mimetypes
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
@@ -12,8 +14,28 @@ BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
 
+SHOP_TIMEZONE = ZoneInfo("Africa/Lagos")
+
+# Label and Bootstrap colour for each order status.
+STATUS_BADGES = {
+    "pending": ("Payment not completed", "secondary"),
+    "paid": ("Paid", "primary"),
+    "shipped": ("Shipped", "info"),
+    "delivered": ("Delivered", "success"),
+    "cancelled": ("Cancelled", "danger"),
+}
+
+
 def naira(kobo: int | None) -> str:
     return f"₦{(kobo or 0) / 100:,.2f}"
+
+
+def local_datetime(value: datetime | None) -> str:
+    """'2 Oct 2026, 14:05' in Lagos time."""
+    if value is None:
+        return ""
+    local = value.astimezone(SHOP_TIMEZONE)
+    return f"{local.day} {local:%b %Y, %H:%M}"
 
 
 def is_video(url: str | None) -> bool:
@@ -44,6 +66,8 @@ def current_user(request: Request) -> dict | None:
 
 
 templates.env.filters["naira"] = naira
+templates.env.filters["local_datetime"] = local_datetime
+templates.env.globals["STATUS_BADGES"] = STATUS_BADGES
 templates.env.tests["video"] = is_video
 templates.env.globals["pop_flashes"] = pop_flashes
 templates.env.globals["current_user"] = current_user

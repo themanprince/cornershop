@@ -1,5 +1,7 @@
 <ul class="nav nav-tabs mb-4">
-  <li class="nav-item">
-    <a class="nav-link {% if active == 'products' %}active{% endif %}" href="/admin/products">Products</a>
-  </li>
+  {% for key, href, label in [("overview", "/admin", "Overview"), ("products", "/admin/products", "Products"), ("orders", "/admin/orders", "Orders")] %}
+    <li class="nav-item">
+      <a class="nav-link {% if active == key %}active{% endif %}" href="{{ href }}">{{ label }}</a>
+    </li>
+  {% endfor %}
 </ul>

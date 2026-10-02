@@ -154,3 +154,47 @@
 .cart-thumb.product-img-placeholder .bi {
   font-size: 1.25rem;
 }
+
+/* Orders */
+.stat-card:hover {
+  border-color: #0d6efd;
+}
+
+.order-steps {
+  position: relative;
+}
+
+.order-steps::before {
+  content: "";
+  position: absolute;
+  top: 20px;
+  left: 16%;
+  right: 16%;
+  border-top: 2px solid #dee2e6;
+}
+
+.order-steps li {
+  position: relative;
+  flex: 1;
+  color: #adb5bd;
+}
+
+.order-steps .step-icon {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f1f3f5;
+  border: 2px solid #dee2e6;
+}
+
+.order-steps li.done {
+  color: #198754;
+}
+
+.order-steps li.done .step-icon {
+  background: #d1e7dd;
+  border-color: #198754;
+}
