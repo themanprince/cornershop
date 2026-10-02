@@ -29,11 +29,13 @@
 - Checkout that redirects to **Paystack (test mode)**
 - Order success page
 - "My orders" page
-- Emails: welcome email on first sign-in, order confirmation on successful payment
+- Emails at each noteworthy stage: welcome on first sign-in; order confirmation on successful payment; shipped; delivered; cancelled (paid orders only, with a refund notice); and a refund notice if a payment arrives for an already-cancelled order. Every order email links to the order page.
 
 ### Admin (minimal)
 - **Products CRUD:** list, create, edit, delete or deactivate, with image upload
+- **Overview** at `/admin`: counts of paid/shipped/awaiting-payment orders, money received, low-stock products, flagged orders and recent orders
 - **Orders:** list (filterable by status), detail view with line items, status update
+- An "Admin dashboard" link is shown to every signed-in user (assignment demo); access is still limited to `ADMIN_EMAILS`
 - Admin access is controlled by an email allowlist in env
 
 ### Non-functional
@@ -238,14 +240,14 @@ Every route requires a signed-in user except `/`, `/privacy`, `/terms`, `/login`
 ### Admin (all require `require_admin`; non-admins get 403)
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/admin` | Redirects to `/admin/products` |
+| GET | `/admin` | Overview dashboard (see §2) |
 | GET | `/admin/products` | Table with all products, including inactive |
 | GET/POST | `/admin/products/new` | Create, with optional image |
 | GET/POST | `/admin/products/{id}/edit` | Edit; new image replaces the old one |
 | POST | `/admin/products/{id}/delete` | Soft delete (see §7) |
 | GET | `/admin/orders?status=` | Newest first, status filter |
 | GET | `/admin/orders/{id}` | Customer, shipping details, items, totals |
-| POST | `/admin/orders/{id}/status` | Allowed transitions only: paid→shipped→delivered; pending→cancelled; paid→cancelled |
+| POST | `/admin/orders/{id}/status` | Allowed transitions only: paid→shipped→delivered; pending→cancelled; paid→cancelled. Applied with `WHERE status = <status the admin saw>` so stale forms can't overwrite newer changes. paid→cancelled restores stock (unless the order was oversold) and the admin refunds in Paystack. Emails the customer, except when cancelling an unpaid order |
 
 ---
 
@@ -282,6 +284,7 @@ Every route requires a signed-in user except `/`, `/privacy`, `/terms`, `/login`
    - If no row is returned, the order was already processed, so return without doing anything else.
    - Otherwise, decrement stock for each item: `UPDATE products SET stock = stock - :q WHERE id = :pid AND stock >= :q`. If any decrement affects 0 rows (oversold), **still keep the order paid** (the money was taken), log a warning, and add an admin-visible flag. The simplest version is an `[OVERSOLD]` note shown in the admin order view. **Never** fail the payment record.
    - Queue the order confirmation email.
+   - If the order was already **cancelled** when a verified payment arrives, keep it cancelled, set `paid_at`, add `[PAID AFTER CANCEL]` to `admin_note` (once, guarded by `paid_at IS NULL`) and email the customer that they'll be refunded. The admin refunds it in Paystack.
 
 ### 9.4 Email
 - `send_email(to, subject, html)` posts JSON to `https://api.brevo.com/v3/smtp/email` with header `api-key: {BREVO_API_KEY}` and sender `{MAIL_FROM_NAME} <{MAIL_FROM_EMAIL}>`. Use a 10 s timeout.

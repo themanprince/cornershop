@@ -1,0 +1,16 @@
+{# Line items, total and delivery details for `order`. #}
+<ul class="list-group list-group-flush">
+  {% for item in order.items %}
+    <li class="list-group-item d-flex justify-content-between gap-2 px-0">
+      <span>{{ item.product_name }} <span class="text-muted">× {{ item.quantity }}</span></span>
+      <span class="text-nowrap">{{ (item.unit_price_kobo * item.quantity) | naira }}</span>
+    </li>
+  {% endfor %}
+  <li class="list-group-item d-flex justify-content-between px-0 fw-semibold">
+    <span>Total</span><span class="text-nowrap">{{ order.total_kobo | naira }}</span>
+  </li>
+</ul>
+<h3 class="h6 mt-3">Delivery details</h3>
+<p class="mb-0 text-muted" style="white-space: pre-line">{{ order.shipping_name }}
+{{ order.shipping_phone }}
+{{ order.shipping_address }}</p>

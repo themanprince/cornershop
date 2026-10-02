@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Overview · Admin{% endblock %}
+{% block content %}
+  {% with active = "overview" %}{% include "admin/_nav.html" %}{% endwith %}
+  <h1 class="h4 mb-3">Admin dashboard</h1>
+
+  <div class="row row-cols-2 row-cols-lg-4 g-3 mb-4">
+    {% for key, label, value, icon, href in [
+      ("to-ship", "Paid, ready to ship", counts.get("paid", 0), "box-seam", "/admin/orders?status=paid"),
+      ("in-transit", "Shipped", counts.get("shipped", 0), "truck", "/admin/orders?status=shipped"),
+      ("awaiting-payment", "Awaiting payment", counts.get("pending", 0), "hourglass-split", "/admin/orders?status=pending"),
+      ("revenue", "Money received", revenue_kobo | naira, "cash-coin", "/admin/orders"),
+    ] %}
+      <div class="col">
+        <a href="{{ href }}" class="card h-100 shadow-sm text-decoration-none text-body stat-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <span class="small text-muted">{{ label }}</span>
+              <i class="bi bi-{{ icon }} text-primary fs-5" aria-hidden="true"></i>
+            </div>
+            <div class="fs-4 fw-semibold mt-1" data-stat="{{ key }}">{{ value }}</div>
+          </div>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if flagged %}
+    <div class="alert alert-warning">
+      <h2 class="h6"><i class="bi bi-exclamation-triangle me-1"></i>Orders that need your attention</h2>
+      <ul class="mb-0">
+        {% for order in flagged %}
+          <li><a href="/admin/orders/{{ order.id }}">Order #{{ order.id }}</a>: {{ order.admin_note }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h2 class="h5 mb-0">Recent orders</h2>
+            <a href="/admin/orders" class="small">All orders</a>
+          </div>
+          {% if recent %}
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <tbody>
+                  {% for order in recent %}
+                    <tr>
+                      <td><a href="/admin/orders/{{ order.id }}">#{{ order.id }}</a></td>
+                      <td class="text-truncate" style="max-width: 12rem">{{ order.user.email }}</td>
+                      <td class="text-nowrap">{{ order.total_kobo | naira }}</td>
+                      <td>{% with status = order.status %}{% include "shop/_status_badge.html" %}{% endwith %}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">No orders yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h2 class="h5 mb-0">Low stock</h2>
+            <a href="/admin/products" class="small">All products</a>
+          </div>
+          {% if low_stock %}
+            <ul class="list-group list-group-flush">
+              {% for product in low_stock %}
+                <li class="list-group-item d-flex justify-content-between px-0">
+                  <a href="/admin/products/{{ product.id }}/edit" class="text-truncate">{{ product.name }}</a>
+                  <span class="badge {{ 'text-bg-danger' if product.stock == 0 else 'text-bg-warning' }}">{{ product.stock }} left</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-muted mb-0">All active products have more than {{ low_stock_threshold }} in stock.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Order #{{ order.id }} · Admin{% endblock %}
+{% block content %}
+  {% with active = "orders" %}{% include "admin/_nav.html" %}{% endwith %}
+  <a href="/admin/orders" class="d-inline-block mb-3">&larr; All orders</a>
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <h1 class="h4 mb-0">Order #{{ order.id }}</h1>
+    {% with status = order.status %}{% include "shop/_status_badge.html" %}{% endwith %}
+  </div>
+
+  {% if order.admin_note %}
+    <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-1"></i>{{ order.admin_note }}</div>
+  {% endif %}
+  {% if order.status == "cancelled" and order.paid_at %}
+    <div class="alert alert-danger">
+      <strong>Refund due:</strong> this order was paid ({{ order.total_kobo | naira }}) and then cancelled.
+      Refund it from your Paystack dashboard using reference <code>{{ order.paystack_reference }}</code>.
+    </div>
+  {% endif %}
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="h5">Items</h2>
+          {% include "shop/_order_items.html" %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5 d-grid gap-4 align-content-start">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="h5">Update status</h2>
+          {% if next_statuses %}
+            <div class="d-flex flex-wrap gap-2">
+              {% for s in next_statuses %}
+                <form method="post" action="/admin/orders/{{ order.id }}/status"
+                      onsubmit="return confirm('Mark order #{{ order.id }} as {{ s }}?{{ ' The customer will be emailed.' if not (order.status == 'pending' and s == 'cancelled') }}')">
+                  <input type="hidden" name="status" value="{{ s }}">
+                  <button type="submit" class="btn {{ 'btn-outline-danger' if s == 'cancelled' else 'btn-primary' }}">
+                    Mark as {{ s }}
+                  </button>
+                </form>
+              {% endfor %}
+            </div>
+            {% if order.status == "paid" %}
+              <p class="small text-muted mt-2 mb-0">
+                {% if "[OVERSOLD]" in (order.admin_note or "") %}
+                  Cancelling won't change stock automatically because this order was oversold; adjust it by hand.
+                {% else %}
+                  Cancelling a paid order puts its items back in stock.
+                {% endif %}
+                You'll then need to refund it in Paystack.
+              </p>
+            {% endif %}
+          {% else %}
+            <p class="text-muted mb-0">This order is {{ order.status }}; there are no further steps.</p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="card shadow-sm">
+        <div class="card-body small">
+          <h2 class="h5">Details</h2>
+          <dl class="row mb-0">
+            <dt class="col-5">Customer</dt><dd class="col-7 text-break">{{ order.user.name or "" }}<br>{{ order.user.email }}</dd>
+            <dt class="col-5">Placed</dt><dd class="col-7">{{ order.created_at | local_datetime }}</dd>
+            <dt class="col-5">Paid</dt><dd class="col-7">{{ (order.paid_at | local_datetime) or "Not paid" }}</dd>
+            <dt class="col-5">Paystack ref</dt><dd class="col-7 text-break"><code>{{ order.paystack_reference }}</code></dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

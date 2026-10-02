@@ -53,7 +53,7 @@ TEST_DATABASE_URL=postgresql://user:pass@localhost:5432/shop_test .venv/bin/pyth
    While the app's publishing status is *Testing*, only the test users you list under
    **Audience** can sign in (up to 100). Add yourself and every tester, or click
    **Publish app** so anyone with a Google account can sign in.
-4. **Paystack:** in Settings → API Keys & Webhooks, set the webhook URL to
+4. **Paystack:** use your **test** keys (`sk_test_…`, `pk_test_…`). In Settings → API Keys & Webhooks, set the webhook URL to
    `https://<your-app>.onrender.com/payments/webhook`.
 5. **Brevo:** under *Senders, Domains & Dedicated IPs*, add and verify the address you'll use
    as `MAIL_FROM_EMAIL`. Then create an API key under *SMTP & API → API keys* and put it in
@@ -81,6 +81,27 @@ redeploy, then click *Verify*.
 
 The app only asks for the `openid`, `email` and `profile` scopes, which are non-sensitive, so
 review is usually light.
+
+## Using the admin dashboard
+
+1. Put your Google email in `ADMIN_EMAILS` (on Render: your service → *Environment*), comma-separated
+   for several admins, and save. Render restarts the app.
+2. Sign in and click the yellow **Admin dashboard** button in the navbar (or go to `/admin`).
+   Everyone signed in sees the button; people not in `ADMIN_EMAILS` get a page explaining how to get access.
+3. **Overview** shows orders to ship, money received, low stock and orders needing attention.
+   **Products** is where you add products with images. **Orders** is where you ship, deliver or cancel
+   orders; each change emails the customer.
+
+## Trying a test payment
+
+With Paystack test keys no real money moves. At checkout, on Paystack's page, use Paystack's
+test card: `4084 0840 8408 4081`, any future expiry, CVV `408` (if asked, PIN `0000` and OTP `123456`).
+Paystack lists more test cards, including ones that fail, at
+<https://paystack.com/docs/payments/test-payments/>.
+
+After paying you land on the success page, the order shows as *Paid* under **My orders** and in the
+admin dashboard, stock goes down, and a confirmation email is sent. The webhook needs the deployed
+HTTPS URL; locally, the redirect back from Paystack confirms the payment on its own.
 
 ## Deploy (Render)
 

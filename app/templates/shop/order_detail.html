@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Order #{{ order.id }} · Cornershop{% endblock %}
+{% block content %}
+  <a href="/orders" class="d-inline-block mb-3">&larr; My orders</a>
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+        <h1 class="h3 mb-0">Order #{{ order.id }}</h1>
+        {% with status = order.status %}{% include "shop/_status_badge.html" %}{% endwith %}
+      </div>
+      <p class="text-muted">Placed {{ order.created_at | local_datetime }}</p>
+
+      {% set steps = [("paid", "Paid", "credit-card"), ("shipped", "Shipped", "truck"), ("delivered", "Delivered", "house-check")] %}
+      {% set reached = {"paid": 1, "shipped": 2, "delivered": 3}.get(order.status, 0) %}
+      {% if order.status in ("paid", "shipped", "delivered") %}
+        <ol class="order-steps list-unstyled d-flex justify-content-between mb-4">
+          {% for key, label, icon in steps %}
+            <li class="text-center {{ 'done' if loop.index <= reached }}">
+              <span class="step-icon"><i class="bi bi-{{ icon }}"></i></span>
+              <span class="d-block small mt-1">{{ label }}</span>
+            </li>
+          {% endfor %}
+        </ol>
+      {% elif order.status == "pending" %}
+        <div class="alert alert-secondary">
+          Payment not completed, so this order won't be delivered. To buy these items, add them to your cart
+          and check out again.
+        </div>
+      {% elif order.status == "cancelled" %}
+        <div class="alert alert-danger">
+          This order was cancelled.{% if order.paid_at %} We'll refund the {{ order.total_kobo | naira }} you paid.{% endif %}
+          Questions? Email <a href="mailto:{{ support_email }}">{{ support_email }}</a>.
+        </div>
+      {% endif %}
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          {% include "shop/_order_items.html" %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

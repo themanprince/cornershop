@@ -14,24 +14,11 @@
         <div class="card shadow-sm">
           <div class="card-body">
             <h2 class="h5">Order #{{ order.id }}</h2>
-            <ul class="list-group list-group-flush">
-              {% for item in order.items %}
-                <li class="list-group-item d-flex justify-content-between gap-2 px-0">
-                  <span>{{ item.product_name }} <span class="text-muted">× {{ item.quantity }}</span></span>
-                  <span class="text-nowrap">{{ (item.unit_price_kobo * item.quantity) | naira }}</span>
-                </li>
-              {% endfor %}
-              <li class="list-group-item d-flex justify-content-between px-0 fw-semibold">
-                <span>Total paid</span><span class="text-nowrap">{{ order.total_kobo | naira }}</span>
-              </li>
-            </ul>
-            <h3 class="h6 mt-3">Delivering to</h3>
-            <p class="mb-0 text-muted" style="white-space: pre-line">{{ order.shipping_name }}
-{{ order.shipping_phone }}
-{{ order.shipping_address }}</p>
+            {% include "shop/_order_items.html" %}
           </div>
         </div>
         <div class="text-center mt-4">
+          <a href="/orders/{{ order.id }}" class="btn btn-outline-primary">Track this order</a>
           <a href="/shop" class="btn btn-primary">Continue shopping</a>
         </div>
       {% elif outcome == "unconfirmed" %}
@@ -44,6 +31,17 @@
           </p>
           <a href="/payments/callback?reference={{ order.paystack_reference }}" class="btn btn-primary">Check again</a>
           <a href="/shop" class="btn btn-outline-secondary">Back to the shop</a>
+        </div>
+      {% elif outcome == "cancelled" %}
+        <div class="text-center">
+          <i class="bi bi-slash-circle text-danger result-icon" aria-hidden="true"></i>
+          <h1 class="h3 mt-2">This order was cancelled</h1>
+          <p class="text-muted">
+            Order <strong>#{{ order.id }}</strong> was cancelled, so it won't be delivered. If you were charged
+            for it, we'll refund you in full; you'll get an email about it.
+          </p>
+          <a href="/orders/{{ order.id }}" class="btn btn-outline-primary">View order</a>
+          <a href="/shop" class="btn btn-primary">Back to the shop</a>
         </div>
       {% else %}
         <div class="text-center">

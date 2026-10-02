@@ -1,15 +1,22 @@
 import logging
 from decimal import Decimal, InvalidOperation
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session, selectinload
 from starlette.datastructures import UploadFile
 
 from app.auth import require_admin
 from app.db import get_db
-from app.models import Product
+from app.models import Order, Product
+from app.services.orders import (
+    ALLOWED_TRANSITIONS,
+    ORDER_STATUSES,
+    PAID_STATUSES,
+    StatusChangeError,
+    change_order_status,
+)
 from app.services.storage import UploadError, delete_image, upload_image
 from app.templating import flash, templates
 
@@ -18,6 +25,8 @@ log = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin", dependencies=[Depends(require_admin)])
 
 INT4_MAX = 2_147_483_647
+LOW_STOCK_THRESHOLD = 3
+ORDERS_PAGE_LIMIT = 200  # TODO(spec): pagination is out of scope for the MVP.
 
 
 def parse_naira(raw: str) -> int:
@@ -86,8 +95,81 @@ def _get_product(db: Session, product_id: int) -> Product:
 
 
 @router.get("")
-def admin_home():
-    return RedirectResponse("/admin/products", status_code=303)
+def overview(request: Request, db: Session = Depends(get_db)):
+    counts = dict(db.execute(select(Order.status, func.count()).group_by(Order.status)).all())
+    revenue_kobo = db.scalar(
+        select(func.coalesce(func.sum(Order.total_kobo), 0)).where(Order.status.in_(PAID_STATUSES))
+    )
+    low_stock = db.scalars(
+        select(Product)
+        .where(Product.is_active, Product.stock <= LOW_STOCK_THRESHOLD)
+        .order_by(Product.stock, Product.name)
+        .limit(10)
+    ).all()
+    flagged = db.scalars(
+        select(Order).where(Order.admin_note.is_not(None)).order_by(Order.created_at.desc()).limit(5)
+    ).all()
+    recent = db.scalars(
+        select(Order).options(selectinload(Order.user)).order_by(Order.created_at.desc()).limit(5)
+    ).all()
+    return templates.TemplateResponse(
+        request,
+        "admin/overview.html",
+        {
+            "counts": counts,
+            "revenue_kobo": revenue_kobo,
+            "low_stock": low_stock,
+            "low_stock_threshold": LOW_STOCK_THRESHOLD,
+            "flagged": flagged,
+            "recent": recent,
+        },
+    )
+
+
+@router.get("/orders")
+def order_list(request: Request, status: str = "", db: Session = Depends(get_db)):
+    status = status if status in ORDER_STATUSES else ""
+    query = select(Order).options(selectinload(Order.user)).order_by(Order.created_at.desc())
+    if status:
+        query = query.where(Order.status == status)
+    orders = db.scalars(query.limit(ORDERS_PAGE_LIMIT)).all()
+    return templates.TemplateResponse(
+        request,
+        "admin/orders.html",
+        {"orders": orders, "status": status, "statuses": ORDER_STATUSES},
+    )
+
+
+def _get_order(db: Session, order_id: int) -> Order:
+    order = db.get(Order, order_id)
+    if order is None:
+        raise HTTPException(status_code=404)
+    return order
+
+
+@router.get("/orders/{order_id}")
+def order_detail(order_id: int, request: Request, db: Session = Depends(get_db)):
+    order = _get_order(db, order_id)
+    # Forward steps first, cancel last.
+    next_statuses = sorted(ALLOWED_TRANSITIONS.get(order.status, ()), key=ORDER_STATUSES.index)
+    return templates.TemplateResponse(
+        request, "admin/order_detail.html", {"order": order, "next_statuses": next_statuses}
+    )
+
+
+@router.post("/orders/{order_id}/status")
+async def order_set_status(
+    order_id: int, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)
+):
+    order = _get_order(db, order_id)
+    new_status = str((await request.form()).get("status") or "")
+    try:
+        change_order_status(db, order, new_status, background_tasks)
+    except StatusChangeError as exc:
+        flash(request, str(exc), "danger")
+    else:
+        flash(request, f"Order #{order_id} is now {new_status}.", "success")
+    return RedirectResponse(f"/admin/orders/{order_id}", status_code=303)
 
 
 @router.get("/products")

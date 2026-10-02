@@ -122,3 +122,26 @@ def make_product(db, name: str = "Rice 5kg", price_kobo: int = 500_000, stock: i
     db.add(product)
     db.commit()
     return product
+
+
+def make_order(db, user: User, quantities: dict, status: str = "pending"):
+    """Create an order for `user` with {product: qty}, then move it to `status` the way the app would."""
+    from fastapi import BackgroundTasks
+
+    from app.services import cart
+    from app.services.orders import ShippingDetails, create_pending_order, mark_order_paid
+
+    summary = cart.price_cart({p.id: q for p, q in quantities.items()}, {p.id: p for p in quantities})
+    order = create_pending_order(
+        db,
+        user_id=user.id,
+        summary=summary,
+        shipping=ShippingDetails(name="Ada Buyer", phone="08012345678", address="1 Marina, Lagos"),
+    )
+    if status != "pending":
+        mark_order_paid(db, order.id, BackgroundTasks())
+    if status not in ("pending", "paid"):
+        order.status = status  # shipped / delivered / cancelled, for listing tests
+        db.commit()
+    db.refresh(order)
+    return order
