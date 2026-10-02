@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Checkout · Cornershop{% endblock %}
+{% block content %}
+  <h1 class="h3 mb-4">Checkout</h1>
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <form method="post" action="/checkout" class="card shadow-sm" novalidate>
+        <div class="card-body">
+          <h2 class="h5 mb-3">Delivery details</h2>
+          <div class="mb-3">
+            <label for="shipping_name" class="form-label">Recipient's name</label>
+            <input id="shipping_name" name="shipping_name" value="{{ values.shipping_name }}" autocomplete="name"
+                   maxlength="100" required class="form-control {% if errors.shipping_name %}is-invalid{% endif %}">
+            <div class="invalid-feedback">{{ errors.shipping_name }}</div>
+          </div>
+          <div class="mb-3">
+            <label for="shipping_phone" class="form-label">Phone number</label>
+            <input id="shipping_phone" name="shipping_phone" value="{{ values.shipping_phone }}" type="tel"
+                   autocomplete="tel" maxlength="20" required placeholder="0801 234 5678"
+                   class="form-control {% if errors.shipping_phone %}is-invalid{% endif %}">
+            <div class="invalid-feedback">{{ errors.shipping_phone }}</div>
+          </div>
+          <div class="mb-3">
+            <label for="shipping_address" class="form-label">Delivery address</label>
+            <textarea id="shipping_address" name="shipping_address" rows="3" autocomplete="street-address"
+                      maxlength="500" required
+                      class="form-control {% if errors.shipping_address %}is-invalid{% endif %}">{{ values.shipping_address }}</textarea>
+            <div class="invalid-feedback">{{ errors.shipping_address }}</div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg w-100">
+            <i class="bi bi-lock me-1"></i>Pay {{ summary.total_kobo | naira }} with Paystack
+          </button>
+          <p class="small text-muted mt-2 mb-0">
+            You'll be taken to Paystack to pay securely, then brought back here.
+          </p>
+        </div>
+      </form>
+    </div>
+    <div class="col-lg-5">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h2 class="h5">Order summary</h2>
+          <ul class="list-group list-group-flush">
+            {% for line in summary.lines %}
+              <li class="list-group-item d-flex justify-content-between gap-2 px-0">
+                <span>{{ line.product.name }} <span class="text-muted">× {{ line.quantity }}</span></span>
+                <span class="text-nowrap">{{ line.line_total_kobo | naira }}</span>
+              </li>
+            {% endfor %}
+            <li class="list-group-item d-flex justify-content-between px-0 fw-semibold">
+              <span>Total</span><span class="text-nowrap">{{ summary.total_kobo | naira }}</span>
+            </li>
+          </ul>
+          <a href="/cart" class="small d-inline-block mt-2">Edit cart</a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

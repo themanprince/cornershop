@@ -23,7 +23,8 @@
 
 ### Customer
 - Sign in / sign out with **Google**. **Every page requires sign-in**: anonymous visitors are sent to `/login` first, then returned to the page they asked for. The first sign-in creates the account (registration).
-- Browse active products (list and detail)
+- Public pages that need no sign-in: a landing page at `/` describing the shop and how Google sign-in data is used, a Privacy Policy (`/privacy`) and Terms of Service (`/terms`). Google's OAuth verification requires these.
+- Browse active products (list and detail) at `/shop`
 - Session-based cart: add, update quantity, remove
 - Checkout that redirects to **Paystack (test mode)**
 - Order success page
@@ -136,6 +137,11 @@ ADMIN_EMAILS=admin1@example.com,admin2@example.com
 PAYSTACK_SECRET_KEY=sk_test_...
 PAYSTACK_PUBLIC_KEY=pk_test_...
 
+BREVO_API_KEY=xkeysib-...
+MAIL_FROM_EMAIL=you@example.com
+MAIL_FROM_NAME=Cornershop                # optional
+SUPPORT_EMAIL=                           # optional; contact address on policy pages (defaults to MAIL_FROM_EMAIL)
+GOOGLE_SITE_VERIFICATION=                # optional; Search Console HTML-tag token for domain verification
 ```
 
 `config.py` must raise a clear error at startup if any required variable is missing.
@@ -202,11 +208,13 @@ create index on order_items (order_id);
 ## 8. Routes
 
 ### Customer (login required)
-Every route requires a signed-in user except `/login`, `/auth/google`, `/auth/callback`, `/health`, `/payments/webhook` and `/static/*`. A global middleware enforces this, so new routes are protected by default.
+Every route requires a signed-in user except `/`, `/privacy`, `/terms`, `/login`, `/auth/google`, `/auth/callback`, `/health`, `/payments/webhook` and `/static/*`. A global middleware enforces this, so new routes are protected by default.
 
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/` | Grid of active products (responsive cards) |
+| GET | `/` | **Public.** Landing page: what the shop is, how it works, how Google sign-in data is used |
+| GET | `/privacy`, `/terms` | **Public.** Privacy Policy and Terms of Service |
+| GET | `/shop` | Grid of active products (responsive cards), welcome banner, placeholders when empty. Default page after sign-in |
 | GET | `/products/{id}` | Detail page with quantity selector and "Add to cart" |
 | GET | `/cart` | Cart view with prices **looked up from DB** |
 | POST | `/cart/add` | `product_id`, `qty`; capped at stock |

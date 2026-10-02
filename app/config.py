@@ -47,6 +47,8 @@ class Settings:
     brevo_api_key: str
     mail_from_email: str
     mail_from_name: str
+    support_email: str
+    google_site_verification: str
 
     @property
     def is_production(self) -> bool:
@@ -79,6 +81,8 @@ def load_settings() -> Settings:
         brevo_api_key=env["BREVO_API_KEY"],
         mail_from_email=env["MAIL_FROM_EMAIL"],
         mail_from_name=env.get("MAIL_FROM_NAME", "Cornershop"),
+        support_email=env.get("SUPPORT_EMAIL", "").strip() or env["MAIL_FROM_EMAIL"],
+        google_site_verification=env.get("GOOGLE_SITE_VERIFICATION", "").strip(),
     )
 
 

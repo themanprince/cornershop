@@ -3,8 +3,10 @@
 Server-rendered FastAPI + Jinja2 shop. Supabase Postgres + Storage, Google sign-in,
 Paystack (test mode), Brevo email. See `SPEC.md` for the full spec.
 
-Every page requires Google sign-in. A person's first sign-in creates their account and
-sends them a welcome email. People whose email is in `ADMIN_EMAILS` also see the Admin pages.
+Every page requires Google sign-in except the landing page (`/`), the Privacy Policy
+(`/privacy`) and the Terms of Service (`/terms`). A person's first sign-in creates their
+account and sends them a welcome email. People whose email is in `ADMIN_EMAILS` also see
+the Admin pages, where they add products with an image or video.
 
 ## Local setup
 
@@ -16,7 +18,7 @@ cp .env.example .env        # fill in every value
 ```
 
 Open http://localhost:8000/health. It should return `{"status":"ok"}`. Then open
-http://localhost:8000/, which sends you to the Google sign-in page.
+http://localhost:8000/ for the landing page, and sign in to reach the shop.
 
 ## Tests
 
@@ -25,7 +27,14 @@ http://localhost:8000/, which sends you to the Google sign-in page.
 .venv/bin/python -m pytest -q app/tests
 ```
 
-The tests use dummy settings and a fake database, so they need no `.env` and no network.
+The tests use dummy settings and never call Google, Paystack, Brevo or Supabase, so they
+need no `.env` and no network. Tests that need Postgres (orders, checkout, payments) are
+skipped unless you point `TEST_DATABASE_URL` at an **empty, disposable** database; they
+drop and recreate the tables in it:
+
+```bash
+TEST_DATABASE_URL=postgresql://user:pass@localhost:5432/shop_test .venv/bin/python -m pytest -q app/tests
+```
 
 ## One-time service setup
 
@@ -51,6 +60,27 @@ The tests use dummy settings and a fake database, so they need no `.env` and no 
    `BREVO_API_KEY`. If *Security → Authorized IPs* is on, turn it off; otherwise Brevo
    blocks requests from Render's changing IPs.
 6. **Admins:** put the Google email of every admin in `ADMIN_EMAILS`, comma-separated.
+
+## Google OAuth verification
+
+In *Google Auth Platform → Branding*, fill in:
+
+- **Application home page:** `https://<your-app>.onrender.com/`
+- **Privacy policy link:** `https://<your-app>.onrender.com/privacy`
+- **Terms of service link:** `https://<your-app>.onrender.com/terms`
+- **Authorized domains:** your app's domain (e.g. `<your-app>.onrender.com`, or your own domain)
+
+All three pages are public. Before submitting, read `/privacy` and `/terms` and adjust them to
+match how the business really operates (especially returns and refunds). They are in
+`app/templates/pages/`. Set `SUPPORT_EMAIL` to the address customers should write to.
+
+If Google asks you to prove you own the domain, add it in
+[Search Console](https://search.google.com/search-console) as a *URL prefix* property, choose
+the **HTML tag** method, copy the `content="…"` value into `GOOGLE_SITE_VERIFICATION`,
+redeploy, then click *Verify*.
+
+The app only asks for the `openid`, `email` and `profile` scopes, which are non-sensitive, so
+review is usually light.
 
 ## Deploy (Render)
 

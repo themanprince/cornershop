@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="row justify-content-center">
+    <article class="col-lg-9 policy">
+      <h1 class="h2 mb-1">{% block policy_title %}{% endblock %}</h1>
+      <p class="text-muted">Last updated: {{ last_updated }}</p>
+      {% block policy_body %}{% endblock %}
+      <hr class="my-4">
+      <p class="small text-muted mb-0">
+        Questions? Email us at <a href="mailto:{{ support_email }}">{{ support_email }}</a>.
+      </p>
+    </article>
+  </div>
+{% endblock %}

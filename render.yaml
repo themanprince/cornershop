@@ -39,3 +39,7 @@ services:
         sync: false
       - key: MAIL_FROM_NAME
         value: Cornershop
+      - key: SUPPORT_EMAIL
+        sync: false
+      - key: GOOGLE_SITE_VERIFICATION
+        sync: false
