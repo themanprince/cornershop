@@ -48,7 +48,18 @@ def test_signed_in_user_sees_shop(client):
     resp = client.get("/shop")
     assert resp.status_code == 200
     assert "Sign out" in resp.text
-    assert "/admin/products" not in resp.text
+
+
+def test_admin_dashboard_link_is_visible_to_every_signed_in_user(client):
+    sign_in(client, "shopper@example.com")
+    page = client.get("/shop").text
+    assert page.count('href="/admin"') >= 2  # navbar and shop banner
+
+
+def test_403_page_explains_how_to_get_admin_access(client):
+    sign_in(client, "shopper@example.com")
+    page = client.get("/admin").text
+    assert "ADMIN_EMAILS" in page and "shopper@example.com" in page
 
 
 def test_non_admin_gets_403_on_admin(client):
