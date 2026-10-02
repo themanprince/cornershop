@@ -129,7 +129,7 @@ DATABASE_URL=postgresql+psycopg://...    # Supabase POOLER connection string
 
 SUPABASE_URL=https://xxxx.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=...            # server-side only, never sent to templates
-SUPABASE_BUCKET=product-images
+SUPABASE_BUCKET=ShoppingWebsiteBucket    # exact, case-sensitive bucket name
 
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...

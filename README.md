@@ -40,7 +40,10 @@ TEST_DATABASE_URL=postgresql://user:pass@localhost:5432/shop_test .venv/bin/pyth
 
 1. **Supabase DB:** open the SQL editor and run `schema.sql`. For `DATABASE_URL`, use
    **Connect → Transaction pooler** (port 6543) and put your DB password into it.
-2. **Supabase Storage:** the bucket named in `SUPABASE_BUCKET` must be **public**.
+2. **Supabase Storage:** the bucket named in `SUPABASE_BUCKET` must exist with exactly that
+   name (case-sensitive) and be **public**. `SUPABASE_SERVICE_ROLE_KEY` must be a **secret** key
+   (Project Settings → API Keys: `sb_secret_…`, or the legacy `service_role` key), not the
+   publishable/anon key.
 3. **Google OAuth** (Google Cloud Console → *Google Auth Platform*):
    1. **Branding:** set the app name and support email. **Audience:** choose *External*.
    2. **Data access:** the default `openid`, `email` and `profile` scopes are all the app needs.
@@ -102,6 +105,20 @@ Paystack lists more test cards, including ones that fail, at
 After paying you land on the success page, the order shows as *Paid* under **My orders** and in the
 admin dashboard, stock goes down, and a confirmation email is sent. The webhook needs the deployed
 HTTPS URL; locally, the redirect back from Paystack confirms the payment on its own.
+
+## Troubleshooting image uploads
+
+If adding a product with an image fails, the form says what Supabase rejected and which setting
+to fix. The usual causes:
+
+- **"no storage bucket named …"**: `SUPABASE_BUCKET` doesn't exactly match the bucket name in
+  Supabase → Storage (names are case-sensitive).
+- **"rejected the storage key" / "publishable key"**: `SUPABASE_SERVICE_ROLE_KEY` holds the
+  anon/publishable key. Use the secret key instead.
+- **"Couldn't reach Supabase Storage"**: `SUPABASE_URL` is wrong (it should be just
+  `https://<project-ref>.supabase.co`) or the free project is paused.
+
+Render's logs also show Supabase's raw response on a `Supabase upload failed:` line.
 
 ## Deploy (Render)
 

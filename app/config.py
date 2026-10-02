@@ -30,6 +30,15 @@ def _normalize_db_url(url: str) -> str:
     return url
 
 
+def _normalize_supabase_url(url: str) -> str:
+    """Reduce to the project URL. Supabase's dashboard also shows .../rest/v1, which breaks Storage calls."""
+    url = url.strip().rstrip("/")
+    for suffix in ("/rest/v1", "/storage/v1", "/auth/v1"):
+        if url.endswith(suffix):
+            return url[: -len(suffix)]
+    return url
+
+
 @dataclass(frozen=True)
 class Settings:
     base_url: str
@@ -68,7 +77,7 @@ def load_settings() -> Settings:
         session_secret=env["SESSION_SECRET"],
         env=env.get("ENV", "development"),
         database_url=_normalize_db_url(env["DATABASE_URL"]),
-        supabase_url=env["SUPABASE_URL"].rstrip("/"),
+        supabase_url=_normalize_supabase_url(env["SUPABASE_URL"]),
         supabase_service_role_key=env["SUPABASE_SERVICE_ROLE_KEY"],
         supabase_bucket=env["SUPABASE_BUCKET"],
         google_client_id=env["GOOGLE_CLIENT_ID"],
