@@ -1,0 +1,8 @@
+{# Renders a product's image or video, or a placeholder. Expects `product` and `css`. #}
+{% if not product.image_url %}
+  <div class="product-img-placeholder {{ css }}">No image</div>
+{% elif product.image_url is video %}
+  <video src="{{ product.image_url }}" class="{{ css }}" muted playsinline controls preload="metadata"></video>
+{% else %}
+  <img src="{{ product.image_url }}" alt="{{ product.name }}" class="{{ css }}" loading="lazy">
+{% endif %}

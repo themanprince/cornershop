@@ -1,35 +1,28 @@
-from pathlib import Path
-
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
+from app.auth import RequireLoginMiddleware
 from app.config import settings
 from app.db import get_db
+from app.routes import admin, auth_routes, shop
+from app.templating import BASE_DIR, templates
 
-BASE_DIR = Path(__file__).resolve().parent
-
-templates = Jinja2Templates(directory=BASE_DIR / "templates")
-templates.env.filters["naira"] = lambda kobo: f"₦{(kobo or 0) / 100:,.2f}"
-
-
-def flash(request: Request, message: str, category: str = "info") -> None:
-    request.session.setdefault("_flashes", []).append([category, message])
-
-
-def pop_flashes(request: Request) -> list:
-    return request.session.pop("_flashes", [])
-
-
-templates.env.globals["pop_flashes"] = pop_flashes
+ERROR_TITLES = {
+    401: "Please sign in",
+    403: "Access denied",
+    404: "Page not found",
+}
 
 
 def create_app() -> FastAPI:
     app = FastAPI(title="Cornershop", docs_url=None, redoc_url=None, openapi_url=None)
+    # Middleware added last runs first, so the session is loaded before the login check.
+    app.add_middleware(RequireLoginMiddleware)
     app.add_middleware(
         SessionMiddleware,
         secret_key=settings.session_secret,
@@ -44,10 +37,19 @@ def create_app() -> FastAPI:
         db.execute(text("select 1"))
         return JSONResponse({"status": "ok"})
 
-    @app.get("/")
-    def index(request: Request):
-        # Replaced by the product grid in M1.
-        return templates.TemplateResponse(request, "shop/index.html", {})
+    app.include_router(auth_routes.router)
+    app.include_router(shop.router)
+    app.include_router(admin.router)
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_error(request: Request, exc: StarletteHTTPException):
+        return templates.TemplateResponse(
+            request,
+            "error.html",
+            {"status": exc.status_code, "title": ERROR_TITLES.get(exc.status_code, "Something went wrong")},
+            status_code=exc.status_code,
+            headers=getattr(exc, "headers", None),
+        )
 
     return app
 

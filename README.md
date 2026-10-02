@@ -3,6 +3,9 @@
 Server-rendered FastAPI + Jinja2 shop. Supabase Postgres + Storage, Google sign-in,
 Paystack (test mode), Brevo email. See `SPEC.md` for the full spec.
 
+Every page requires Google sign-in. A person's first sign-in creates their account and
+sends them a welcome email. People whose email is in `ADMIN_EMAILS` also see the Admin pages.
+
 ## Local setup
 
 ```bash
@@ -12,22 +15,42 @@ cp .env.example .env        # fill in every value
 .venv/bin/python -m app.main
 ```
 
-Open http://localhost:8000/health. It should return `{"status":"ok"}`.
+Open http://localhost:8000/health. It should return `{"status":"ok"}`. Then open
+http://localhost:8000/, which sends you to the Google sign-in page.
+
+## Tests
+
+```bash
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m pytest -q app/tests
+```
+
+The tests use dummy settings and a fake database, so they need no `.env` and no network.
 
 ## One-time service setup
 
 1. **Supabase DB:** open the SQL editor and run `schema.sql`. For `DATABASE_URL`, use
    **Connect → Transaction pooler** (port 6543) and put your DB password into it.
 2. **Supabase Storage:** the bucket named in `SUPABASE_BUCKET` must be **public**.
-3. **Google OAuth** (Cloud Console → Credentials → your OAuth client): add these
-   *Authorized redirect URIs* exactly as written:
-   - `http://localhost:8000/auth/callback`
-   - `https://<your-app>.onrender.com/auth/callback`
+3. **Google OAuth** (Google Cloud Console → *Google Auth Platform*):
+   1. **Branding:** set the app name and support email. **Audience:** choose *External*.
+   2. **Data access:** the default `openid`, `email` and `profile` scopes are all the app needs.
+   3. **Clients → Create client → Web application.** Add these *Authorized redirect URIs*
+      exactly as written:
+      - `http://localhost:8000/auth/callback`
+      - `https://<your-app>.onrender.com/auth/callback`
+   4. Copy the client ID and secret into `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 
-   While the consent screen is in *Testing*, add every tester's email as a test user.
+   While the app's publishing status is *Testing*, only the test users you list under
+   **Audience** can sign in (up to 100). Add yourself and every tester, or click
+   **Publish app** so anyone with a Google account can sign in.
 4. **Paystack:** in Settings → API Keys & Webhooks, set the webhook URL to
    `https://<your-app>.onrender.com/payments/webhook`.
-5. **Brevo:** verify the `MAIL_FROM_EMAIL` sender, then create an API key.
+5. **Brevo:** under *Senders, Domains & Dedicated IPs*, add and verify the address you'll use
+   as `MAIL_FROM_EMAIL`. Then create an API key under *SMTP & API → API keys* and put it in
+   `BREVO_API_KEY`. If *Security → Authorized IPs* is on, turn it off; otherwise Brevo
+   blocks requests from Render's changing IPs.
+6. **Admins:** put the Google email of every admin in `ADMIN_EMAILS`, comma-separated.
 
 ## Deploy (Render)
 

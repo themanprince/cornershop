@@ -22,8 +22,8 @@
 ## 2. Features (scope)
 
 ### Customer
+- Sign in / sign out with **Google**. **Every page requires sign-in**: anonymous visitors are sent to `/login` first, then returned to the page they asked for. The first sign-in creates the account (registration).
 - Browse active products (list and detail)
-- Sign in / sign out with **Google**
 - Session-based cart: add, update quantity, remove
 - Checkout that redirects to **Paystack (test mode)**
 - Order success page
@@ -201,7 +201,9 @@ create index on order_items (order_id);
 
 ## 8. Routes
 
-### Public / customer
+### Customer (login required)
+Every route requires a signed-in user except `/login`, `/auth/google`, `/auth/callback`, `/health`, `/payments/webhook` and `/static/*`. A global middleware enforces this, so new routes are protected by default.
+
 | Method | Path | Notes |
 |---|---|---|
 | GET | `/` | Grid of active products (responsive cards) |
@@ -220,9 +222,10 @@ create index on order_items (order_id);
 ### Auth
 | Method | Path | Notes |
 |---|---|---|
-| GET | `/login` | Stores `next` in session; redirects to Google |
+| GET | `/login` | Sign-in page with a "Sign in with Google" button. Keeps `next` in the session |
+| GET | `/auth/google` | Redirects to Google |
 | GET | `/auth/callback` | Upserts user; sends welcome email on first creation; redirects to `next` |
-| POST | `/logout` | Clears session |
+| POST | `/logout` | Clears the signed-in user; redirects to `/login` |
 
 ### Admin (all require `require_admin`; non-admins get 403)
 | Method | Path | Notes |
@@ -245,7 +248,7 @@ create index on order_items (order_id);
 2. Respond to user based on returned response of auth
 3. On callback, read `userinfo`. Reject the sign-in if `email_verified` is false. Upsert by email.
 4. If the user was newly created, queue the welcome email.
-5. Store `user_id`, `email` and `is_admin` in the session. Compute `is_admin` from `ADMIN_EMAILS` at login time.
+5. Store `user_id`, `email`, `name` and `avatar_url` in the session. `is_admin` is computed from `ADMIN_EMAILS` on every request, so removing an email takes effect immediately.
 6. Session cookie settings: `https_only=True` when `ENV=production`, `same_site="lax"`.
 
 ### 9.2 Image upload (host-agnostic)
@@ -273,7 +276,7 @@ create index on order_items (order_id);
    - Queue the order confirmation email.
 
 ### 9.4 Email
-- `send_email(to, subject, html)` posts to `{MAILGUN_BASE_URL}/v3/{MAILGUN_DOMAIN}/messages` with basic auth `("api", MAILGUN_API_KEY)`. Use a 10 s timeout.
+- `send_email(to, subject, html)` posts JSON to `https://api.brevo.com/v3/smtp/email` with header `api-key: {BREVO_API_KEY}` and sender `{MAIL_FROM_NAME} <{MAIL_FROM_EMAIL}>`. Use a 10 s timeout.
 - Always invoke it through FastAPI `BackgroundTasks`. On failure, **log and swallow** the error. Email problems must never break sign-in or checkout.
 - Templates go in `templates/emails/`: `welcome.html` and `order_confirmation.html` (order number, items, total, shipping address).
 
@@ -322,7 +325,7 @@ Stop after each milestone and confirm it runs. The time boxes assume under 4 hou
 ## 12. Known caveats and gotchas
 
 - **Render free tier sleeps** after about 15 minutes idle, so the first request after that takes around 30–60 s. This is acceptable for the demo, **not** for a real business; use a paid instance.
-- **Mailgun sandbox domains only deliver to "Authorized Recipients"** added in the Mailgun dashboard. Add every test email address before the demo, or mail fails silently.
+- **Brevo only sends from a verified sender.** `MAIL_FROM_EMAIL` must be verified under Senders, Domains & Dedicated IPs, or every send is rejected (logged, never shown to users). If "Authorized IPs" is enabled under Security, requests from Render's changing IPs are blocked, so turn it off or mail fails silently. The free plan has a daily send limit.
 - **Google OAuth redirect URIs** must match exactly, including the scheme and any trailing slash. Register both `http://localhost:8000/auth/callback` and `https://<prod-domain>/auth/callback`. While the consent screen is in "Testing" mode, only listed test users can sign in. Add test users or publish the app.
 - **Paystack webhook URL** is set in the Paystack dashboard (Settings → API Keys & Webhooks) and must be the public HTTPS URL. Locally, rely on the callback verification; webhooks need the deployed URL or a tunnel.
 - **Supabase pooler:** use the pooler connection string in `DATABASE_URL`. If using the transaction-mode pooler, disable psycopg prepared statements (`prepare_threshold=None` in connect args).
@@ -338,7 +341,7 @@ Stop after each milestone and confirm it runs. The time boxes assume under 4 hou
 Not built now. Listed so the handoff is honest:
 
 - Paid hosting (no cold starts) plus an uptime monitor (e.g. UptimeRobot on `/health`)
-- Custom Mailgun sending domain with SPF/DKIM verified
+- Custom Brevo sending domain with SPF/DKIM/DMARC verified (instead of a single verified sender address)
 - Paystack **live** keys and a business verification review
 - CSRF tokens on all forms; rate limiting on auth and checkout
 - Automated tests (at minimum: `mark_order_paid` idempotency, webhook signature, price recomputation)
@@ -354,6 +357,7 @@ Not built now. Listed so the handoff is honest:
 - [ ] `/health` returns ok
 - [ ] Google sign-in works on the live URL
 - [ ] Non-admin gets 403 on `/admin`
+- [ ] An anonymous visitor to any page is sent to sign-in; a first sign-in sends the welcome email
 - [ ] Admin creates, edits and deactivates a product with an image; the image survives a redeploy
 - [ ] Customer adds to cart, checks out, pays with a Paystack test card, and lands on success
 - [ ] Order shows `paid` once; stock decremented once (even if callback and webhook both fire)

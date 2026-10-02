@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if product else "New" }} product · Admin{% endblock %}
+{% block content %}
+  {% with active = "products" %}{% include "admin/_nav.html" %}{% endwith %}
+  <h1 class="h4 mb-3">{{ "Edit " ~ product.name if product else "New product" }}</h1>
+  <form method="post" enctype="multipart/form-data" class="row g-3" style="max-width: 640px">
+    <div class="col-12">
+      <label for="name" class="form-label">Name</label>
+      <input id="name" name="name" value="{{ values.name }}" required
+             class="form-control {% if errors.name %}is-invalid{% endif %}">
+      <div class="invalid-feedback">{{ errors.name }}</div>
+    </div>
+    <div class="col-12">
+      <label for="description" class="form-label">Description</label>
+      <textarea id="description" name="description" rows="4" class="form-control">{{ values.description }}</textarea>
+    </div>
+    <div class="col-sm-6">
+      <label for="price" class="form-label">Price (₦)</label>
+      <input id="price" name="price" value="{{ values.price }}" inputmode="decimal" required placeholder="2500.00"
+             class="form-control {% if errors.price %}is-invalid{% endif %}">
+      <div class="invalid-feedback">{{ errors.price }}</div>
+    </div>
+    <div class="col-sm-6">
+      <label for="stock" class="form-label">Stock</label>
+      <input id="stock" name="stock" type="number" min="0" step="1" value="{{ values.stock }}" required
+             class="form-control {% if errors.stock %}is-invalid{% endif %}">
+      <div class="invalid-feedback">{{ errors.stock }}</div>
+    </div>
+    <div class="col-12">
+      <label for="image" class="form-label">Image or video (max 5 MB)</label>
+      {% if product and product.image_url %}
+        <div class="mb-2">
+          {% with css = "admin-thumb" %}{% include "shop/_media.html" %}{% endwith %}
+          <span class="small text-muted ms-2">Choosing a new file replaces this one.</span>
+        </div>
+      {% endif %}
+      <input id="image" name="image" type="file" accept="image/*,video/*"
+             class="form-control {% if errors.image %}is-invalid{% endif %}">
+      <div class="invalid-feedback">{{ errors.image }}</div>
+    </div>
+    <div class="col-12 form-check ms-1">
+      <input class="form-check-input" type="checkbox" id="is_active" name="is_active"
+             {% if values.is_active %}checked{% endif %}>
+      <label class="form-check-label" for="is_active">Active (visible to customers)</label>
+    </div>
+    <div class="col-12 d-flex gap-2">
+      <button type="submit" class="btn btn-primary">Save</button>
+      <a href="/admin/products" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+{% endblock %}
