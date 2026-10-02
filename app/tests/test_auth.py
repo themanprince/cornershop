@@ -33,10 +33,10 @@ def test_login_page_offers_google(client):
     [
         ("/products/1", "/products/1"),
         ("/admin?status=paid", "/admin?status=paid"),
-        ("https://evil.example", "/"),
-        ("//evil.example", "/"),
-        ("/\\evil.example", "/"),
-        (None, "/"),
+        ("https://evil.example", "/shop"),
+        ("//evil.example", "/shop"),
+        ("/\\evil.example", "/shop"),
+        (None, "/shop"),
     ],
 )
 def test_safe_next_blocks_open_redirects(value, expected):
@@ -45,7 +45,7 @@ def test_safe_next_blocks_open_redirects(value, expected):
 
 def test_signed_in_user_sees_shop(client):
     sign_in(client, "shopper@example.com")
-    resp = client.get("/")
+    resp = client.get("/shop")
     assert resp.status_code == 200
     assert "Sign out" in resp.text
     assert "/admin/products" not in resp.text
@@ -68,7 +68,7 @@ def test_logout_clears_the_user(client):
     sign_in(client, "shopper@example.com")
     resp = client.post("/logout")
     assert resp.headers["location"] == "/login"
-    assert client.get("/").status_code == 303
+    assert client.get("/shop").status_code == 303
 
 
 class FakeUser:
@@ -89,7 +89,7 @@ def test_callback_rejects_unverified_email(client, monkeypatch):
     _fake_google(monkeypatch, {"email": "x@example.com", "email_verified": False})
     resp = client.get("/auth/callback")
     assert resp.headers["location"] == "/login"
-    assert client.get("/").status_code == 303
+    assert client.get("/shop").status_code == 303
 
 
 def test_first_sign_in_sends_welcome_email(client, monkeypatch):
@@ -114,7 +114,8 @@ def test_first_sign_in_sends_welcome_email(client, monkeypatch):
     assert len(sent) == 1
     assert sent[0][0] == "new@example.com"
     assert "Welcome" in sent[0][1] and "New Person" in sent[0][2]
-    assert client.get("/").status_code == 200
+    assert resp.headers["location"] == "/shop"
+    assert client.get("/shop").status_code == 200
 
 
 def test_returning_user_gets_no_welcome_email(client, monkeypatch):

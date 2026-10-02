@@ -9,7 +9,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.auth import RequireLoginMiddleware
 from app.config import settings
 from app.db import get_db
-from app.routes import admin, auth_routes, shop
+from app.routes import admin, auth_routes, pages, payments_routes, shop
 from app.templating import BASE_DIR, templates
 
 ERROR_TITLES = {
@@ -37,8 +37,10 @@ def create_app() -> FastAPI:
         db.execute(text("select 1"))
         return JSONResponse({"status": "ok"})
 
+    app.include_router(pages.router)
     app.include_router(auth_routes.router)
     app.include_router(shop.router)
+    app.include_router(payments_routes.router)
     app.include_router(admin.router)
 
     @app.exception_handler(StarletteHTTPException)

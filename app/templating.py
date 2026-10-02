@@ -5,6 +5,7 @@ from fastapi import Request
 from fastapi.templating import Jinja2Templates
 
 from app.config import settings
+from app.services.cart import item_count
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -46,3 +47,6 @@ templates.env.filters["naira"] = naira
 templates.env.tests["video"] = is_video
 templates.env.globals["pop_flashes"] = pop_flashes
 templates.env.globals["current_user"] = current_user
+templates.env.globals["cart_count"] = lambda request: item_count(request.session)
+templates.env.globals["support_email"] = settings.support_email
+templates.env.globals["google_site_verification"] = settings.google_site_verification

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Your cart · Cornershop{% endblock %}
+{% block content %}
+  <h1 class="h3 mb-4">Your cart</h1>
+  {% if not summary.lines %}
+    <div class="text-center py-5">
+      <i class="bi bi-cart3 empty-icon text-muted" aria-hidden="true"></i>
+      <p class="text-muted mt-2">Your cart is empty.</p>
+      <a href="/shop" class="btn btn-primary">Browse the shop</a>
+    </div>
+  {% else %}
+    {% for problem in summary.problems %}
+      <div class="alert alert-warning py-2">{{ problem }}</div>
+    {% endfor %}
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <ul class="list-group">
+          {% for line in summary.lines %}
+            {% set product = line.product %}
+            <li class="list-group-item d-flex gap-3 align-items-center flex-wrap">
+              <a href="/products/{{ product.id }}" class="flex-shrink-0">
+                {% with css = "cart-thumb" %}{% include "shop/_media.html" %}{% endwith %}
+              </a>
+              <div class="flex-grow-1 min-w-0">
+                <a href="/products/{{ product.id }}" class="fw-semibold text-body text-decoration-none">{{ product.name }}</a>
+                <div class="small text-muted">{{ product.price_kobo | naira }} each</div>
+              </div>
+              <form method="post" action="/cart/update" class="d-flex gap-2 align-items-center">
+                <input type="hidden" name="product_id" value="{{ product.id }}">
+                <label class="visually-hidden" for="qty-{{ product.id }}">Quantity</label>
+                <input type="number" id="qty-{{ product.id }}" name="qty" value="{{ line.quantity }}" min="0"
+                       max="{{ product.stock }}" class="form-control form-control-sm qty-input">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">Update</button>
+              </form>
+              <form method="post" action="/cart/update">
+                <input type="hidden" name="product_id" value="{{ product.id }}">
+                <input type="hidden" name="qty" value="0">
+                <button type="submit" class="btn btn-sm btn-link text-danger" aria-label="Remove {{ product.name }}">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+              <div class="fw-semibold text-end cart-line-total">{{ line.line_total_kobo | naira }}</div>
+            </li>
+          {% endfor %}
+        </ul>
+        <a href="/shop" class="d-inline-block mt-3">&larr; Continue shopping</a>
+      </div>
+      <div class="col-lg-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h2 class="h5">Summary</h2>
+            <div class="d-flex justify-content-between my-3">
+              <span>Total</span>
+              <strong class="fs-5">{{ summary.total_kobo | naira }}</strong>
+            </div>
+            {% if summary.ok %}
+              <a href="/checkout" class="btn btn-primary w-100">Proceed to checkout</a>
+            {% else %}
+              <button class="btn btn-primary w-100" disabled>Fix the items above to check out</button>
+            {% endif %}
+            <p class="small text-muted mt-2 mb-0"><i class="bi bi-shield-lock me-1"></i>Secure payment with Paystack</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

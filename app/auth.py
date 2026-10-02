@@ -17,20 +17,23 @@ oauth.register(
 
 # Everything else requires a signed-in user.
 PUBLIC_PATHS = {
+    "/",
+    "/privacy",
+    "/terms",
     "/login",
     "/auth/google",
     "/auth/callback",
     "/health",
-    # Paystack's servers call this (M3); it is authenticated by its HMAC signature instead.
+    # Paystack's servers call this; it is authenticated by its HMAC signature instead.
     "/payments/webhook",
 }
 PUBLIC_PREFIXES = ("/static/",)
 
 
-def safe_next(value: str | None) -> str:
+def safe_next(value: str | None, default: str = "/shop") -> str:
     """Only allow same-site relative paths, so `next` can't be an open redirect."""
     if not value or not value.startswith("/") or value.startswith("//") or "\\" in value:
-        return "/"
+        return default
     return value
 
 

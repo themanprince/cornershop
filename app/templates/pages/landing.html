@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Cornershop · Shop online, pay securely{% endblock %}
+
+{% block hero %}
+  <section class="hero text-white">
+    <div class="container py-5">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-7">
+          <span class="badge rounded-pill text-bg-light text-uppercase small mb-3">Your neighbourhood store, online</span>
+          <h1 class="display-5 fw-bold mb-3">Shop from Cornershop, pay securely, get it delivered.</h1>
+          <p class="lead mb-4 hero-lead">
+            Browse our products, add what you need to your cart, and pay in naira with Paystack.
+            We deliver to the address you give us and email you a receipt for every order.
+          </p>
+          <div class="d-flex flex-wrap gap-2">
+            {% if current_user(request) %}
+              <a href="/shop" class="btn btn-light btn-lg"><i class="bi bi-bag me-1"></i>Go to the shop</a>
+            {% else %}
+              <a href="/login" class="btn btn-light btn-lg"><i class="bi bi-google me-1"></i>Sign in with Google</a>
+            {% endif %}
+            <a href="#how-it-works" class="btn btn-outline-light btn-lg">How it works</a>
+          </div>
+        </div>
+        <div class="col-lg-5 d-none d-lg-block" aria-hidden="true">
+          <div class="hero-art">
+            <div class="hero-tile"><i class="bi bi-basket2"></i></div>
+            <div class="hero-tile"><i class="bi bi-credit-card-2-front"></i></div>
+            <div class="hero-tile"><i class="bi bi-truck"></i></div>
+            <div class="hero-tile"><i class="bi bi-envelope-check"></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %}
+
+{% block content %}
+  <section id="how-it-works" class="py-4">
+    <h2 class="h3 text-center mb-4">How it works</h2>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3">
+      {% for icon, title, text in [
+        ("person-check", "1. Sign in", "Sign in with your Google account. There's no new password to create or remember."),
+        ("grid-3x3-gap", "2. Pick your products", "Browse the shop, check prices and stock, and add items to your cart."),
+        ("shield-lock", "3. Pay securely", "Enter your delivery details and pay with Paystack using your card or another payment option it offers."),
+        ("envelope-paper", "4. Get confirmation", "As soon as your payment is confirmed, we email you a receipt with your order details."),
+      ] %}
+        <div class="col">
+          <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+              <div class="feature-icon mb-3"><i class="bi bi-{{ icon }}"></i></div>
+              <h3 class="h6">{{ title }}</h3>
+              <p class="text-muted small mb-0">{{ text }}</p>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="py-4">
+    <div class="row g-4 align-items-stretch">
+      <div class="col-lg-6">
+        <div class="p-4 rounded-3 bg-body-tertiary h-100">
+          <h2 class="h4"><i class="bi bi-patch-check me-2 text-primary"></i>Why shop with us</h2>
+          <ul class="list-unstyled mt-3 mb-0 d-grid gap-3">
+            <li class="d-flex gap-3">
+              <i class="bi bi-lock fs-5 text-primary"></i>
+              <span><strong>Payments handled by Paystack.</strong> Your card details go straight to Paystack.
+                Cornershop never sees or stores them.</span>
+            </li>
+            <li class="d-flex gap-3">
+              <i class="bi bi-cash-coin fs-5 text-primary"></i>
+              <span><strong>Clear prices in naira.</strong> The price you see is the price you pay, checked
+                against our records again at checkout.</span>
+            </li>
+            <li class="d-flex gap-3">
+              <i class="bi bi-phone fs-5 text-primary"></i>
+              <span><strong>Works on your phone.</strong> Browse, check out and pay from any device.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="p-4 rounded-3 border h-100" id="google-sign-in">
+          <h2 class="h4"><i class="bi bi-google me-2 text-primary"></i>About signing in with Google</h2>
+          <p class="mt-3">
+            We use Google sign-in so you don't need another password. When you sign in, Google shares your
+            name, email address and profile picture with Cornershop. We use them only to:
+          </p>
+          <ul>
+            <li>create your Cornershop account and keep you signed in,</li>
+            <li>show your name and picture while you're signed in,</li>
+            <li>send you a welcome email and receipts for your orders.</li>
+          </ul>
+          <p class="mb-0 small text-muted">
+            We never post to your Google account, read your emails or contacts, or sell your data.
+            Read our <a href="/privacy">Privacy Policy</a> for the full details.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="py-4">
+    <div class="cta rounded-3 p-4 p-md-5 text-center">
+      <h2 class="h3">Ready to shop?</h2>
+      <p class="text-muted mb-4">Sign in once and your account is ready. It takes a few seconds.</p>
+      {% if current_user(request) %}
+        <a href="/shop" class="btn btn-primary btn-lg">Go to the shop</a>
+      {% else %}
+        <a href="/login" class="btn btn-primary btn-lg"><i class="bi bi-google me-1"></i>Sign in with Google</a>
+      {% endif %}
+      <p class="small text-muted mt-3 mb-0">
+        By signing in you agree to our <a href="/terms">Terms of Service</a> and
+        <a href="/privacy">Privacy Policy</a>.
+      </p>
+    </div>
+  </section>
+{% endblock %}

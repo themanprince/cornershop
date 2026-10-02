@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Order #{{ order.id }} · Cornershop{% endblock %}
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      {% if outcome == "paid" %}
+        <div class="text-center mb-4">
+          <i class="bi bi-check-circle-fill text-success result-icon" aria-hidden="true"></i>
+          <h1 class="h3 mt-2">Payment successful</h1>
+          <p class="text-muted">
+            Thank you! Order <strong>#{{ order.id }}</strong> is confirmed. We've emailed you a receipt.
+          </p>
+        </div>
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h2 class="h5">Order #{{ order.id }}</h2>
+            <ul class="list-group list-group-flush">
+              {% for item in order.items %}
+                <li class="list-group-item d-flex justify-content-between gap-2 px-0">
+                  <span>{{ item.product_name }} <span class="text-muted">× {{ item.quantity }}</span></span>
+                  <span class="text-nowrap">{{ (item.unit_price_kobo * item.quantity) | naira }}</span>
+                </li>
+              {% endfor %}
+              <li class="list-group-item d-flex justify-content-between px-0 fw-semibold">
+                <span>Total paid</span><span class="text-nowrap">{{ order.total_kobo | naira }}</span>
+              </li>
+            </ul>
+            <h3 class="h6 mt-3">Delivering to</h3>
+            <p class="mb-0 text-muted" style="white-space: pre-line">{{ order.shipping_name }}
+{{ order.shipping_phone }}
+{{ order.shipping_address }}</p>
+          </div>
+        </div>
+        <div class="text-center mt-4">
+          <a href="/shop" class="btn btn-primary">Continue shopping</a>
+        </div>
+      {% elif outcome == "unconfirmed" %}
+        <div class="text-center">
+          <i class="bi bi-hourglass-split text-warning result-icon" aria-hidden="true"></i>
+          <h1 class="h3 mt-2">We couldn't confirm your payment yet</h1>
+          <p class="text-muted">
+            We couldn't reach Paystack to check order <strong>#{{ order.id }}</strong>. If you were charged,
+            your order will be confirmed automatically and you'll get an email. Please don't pay again.
+          </p>
+          <a href="/payments/callback?reference={{ order.paystack_reference }}" class="btn btn-primary">Check again</a>
+          <a href="/shop" class="btn btn-outline-secondary">Back to the shop</a>
+        </div>
+      {% else %}
+        <div class="text-center">
+          <i class="bi bi-x-circle-fill text-danger result-icon" aria-hidden="true"></i>
+          <h1 class="h3 mt-2">Payment not completed</h1>
+          <p class="text-muted">
+            Your payment for order <strong>#{{ order.id }}</strong> didn't go through, so you haven't been charged
+            for it. Your cart is still saved.
+          </p>
+          <a href="/checkout" class="btn btn-primary">Try again</a>
+          <a href="/cart" class="btn btn-outline-secondary">View cart</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
