@@ -60,6 +60,12 @@ def explain_failure(status_code: int, body_text: str, key: str) -> str:
     """Turn a Supabase Storage error response into a message saying which setting to fix."""
     message = _supabase_message(body_text)
     lowered = message.lower()
+    if "PGRST" in body_text:
+        # PostgREST (the database API) answered, so the request never reached Storage.
+        return (
+            "SUPABASE_URL points at Supabase's database API (…/rest/v1), not the project. "
+            "Set it to just https://<project-ref>.supabase.co."
+        )
     if "bucket not found" in lowered:
         return (
             f"Supabase has no storage bucket named “{settings.supabase_bucket}”. Bucket names are "

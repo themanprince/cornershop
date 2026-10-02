@@ -117,3 +117,9 @@ def test_unreachable_supabase_is_an_upload_error_not_a_crash(monkeypatch):
     mock_supabase(monkeypatch, down)
     with pytest.raises(storage.UploadError, match="SUPABASE_URL"):
         asyncio.run(storage.upload_image(png()))
+
+
+def test_postgrest_error_means_supabase_url_points_at_the_database_api():
+    msg = explain(404, {"code": "PGRST125", "details": None, "hint": None,
+                        "message": "Invalid path specified in request URL"})
+    assert "SUPABASE_URL" in msg and "/rest/v1" in msg
