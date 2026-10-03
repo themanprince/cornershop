@@ -26,6 +26,8 @@ PUBLIC_PATHS = {
     "/health",
     # Paystack's servers call this; it is authenticated by its HMAC signature instead.
     "/payments/webhook",
+    "/manifest.json",
+    "/sw.js",
 }
 PUBLIC_PREFIXES = ("/static/",)
 

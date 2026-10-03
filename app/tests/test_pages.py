@@ -49,3 +49,23 @@ def test_empty_shop_shows_welcome_and_placeholders(client):
 def test_admin_sees_add_product_prompt_on_empty_shop(client):
     sign_in(client, "admin@example.com")
     assert 'href="/admin/products/new"' in client.get("/shop").text
+
+
+def test_pwa_manifest_and_sw_accessible(client):
+    manifest_resp = client.get("/manifest.json")
+    assert manifest_resp.status_code == 200
+    data = manifest_resp.json()
+    assert data["name"] == "Cornershop"
+    assert data["display"] == "standalone"
+
+    sw_resp = client.get("/sw.js")
+    assert sw_resp.status_code == 200
+    assert "cornershop" in sw_resp.text
+
+
+def test_pwa_meta_tags_present(client):
+    page = client.get("/").text
+    assert 'rel="manifest" href="/manifest.json"' in page
+    assert 'name="apple-mobile-web-app-capable" content="yes"' in page
+    assert "apple-touch-icon" in page
+

@@ -198,3 +198,18 @@
   background: #d1e7dd;
   border-color: #198754;
 }
+
+/* PWA iOS safe area padding support */
+@supports (padding: max(0px)) {
+  .navbar {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+  footer {
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+    padding-left: max(0.75rem, env(safe-area-inset-left));
+    padding-right: max(0.75rem, env(safe-area-inset-right));
+  }
+}
+
