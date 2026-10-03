@@ -51,7 +51,7 @@ async def payment_callback(
         db.refresh(order)
 
     if order.status in PAID_STATUSES:
-        clear_cart(request.session)
+        clear_cart(db, user["id"])
         request.session.pop(SHIPPING_SESSION_KEY, None)
         outcome = "paid"
     elif order.status == "cancelled":

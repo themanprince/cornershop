@@ -44,6 +44,16 @@ create table if not exists order_items (
   unit_price_kobo  integer not null check (unit_price_kobo >= 0)
 );
 
+-- One row per product in a shopper's cart. Stored per account so every device sees the same cart.
+create table if not exists cart_items (
+  id          bigserial primary key,
+  user_id     bigint not null references users(id) on delete cascade,
+  product_id  bigint not null references products(id) on delete cascade,
+  quantity    integer not null check (quantity > 0),
+  updated_at  timestamptz not null default now(),
+  unique (user_id, product_id)
+);
+
 create index if not exists orders_user_id_idx on orders (user_id);
 create index if not exists orders_status_idx on orders (status);
 create index if not exists order_items_order_id_idx on order_items (order_id);
@@ -54,3 +64,4 @@ alter table users enable row level security;
 alter table products enable row level security;
 alter table orders enable row level security;
 alter table order_items enable row level security;
+alter table cart_items enable row level security;

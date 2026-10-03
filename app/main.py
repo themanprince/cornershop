@@ -19,8 +19,19 @@ ERROR_TITLES = {
 }
 
 
+def share_db_with_templates(request: Request, db: Session = Depends(get_db)) -> None:
+    """Lets base.html's cart badge reuse this request's database session."""
+    request.state.db = db
+
+
 def create_app() -> FastAPI:
-    app = FastAPI(title="Cornershop", docs_url=None, redoc_url=None, openapi_url=None)
+    app = FastAPI(
+        title="Cornershop",
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
+        dependencies=[Depends(share_db_with_templates)],
+    )
     # Middleware added last runs first, so the session is loaded before the login check.
     app.add_middleware(RequireLoginMiddleware)
     app.add_middleware(
@@ -45,13 +56,19 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(StarletteHTTPException)
     async def http_error(request: Request, exc: StarletteHTTPException):
-        return templates.TemplateResponse(
+        response = templates.TemplateResponse(
             request,
             "error.html",
             {"status": exc.status_code, "title": ERROR_TITLES.get(exc.status_code, "Something went wrong")},
             status_code=exc.status_code,
             headers=getattr(exc, "headers", None),
         )
+        # The route's DB session was already closed when it raised; drawing the navbar's
+        # cart badge reopened it, so close it again to hand the connection back to the pool.
+        db = getattr(request.state, "db", None)
+        if db is not None:
+            db.close()
+        return response
 
     return app
 

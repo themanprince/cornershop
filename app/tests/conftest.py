@@ -52,6 +52,12 @@ class FakeDB:
     def scalars(self, *args, **kwargs):
         return FakeResult()
 
+    def scalar(self, *args, **kwargs):
+        return None
+
+    def close(self):
+        pass
+
     def get(self, *args, **kwargs):
         return None
 
@@ -67,7 +73,7 @@ def client():
 @pytest.fixture(scope="session")
 def _schema():
     with engine.begin() as conn:
-        conn.execute(text("drop table if exists order_items, orders, products, users cascade"))
+        conn.execute(text("drop table if exists cart_items, order_items, orders, products, users cascade"))
         conn.exec_driver_sql(SCHEMA_SQL.read_text())
 
 
@@ -75,7 +81,7 @@ def _schema():
 def db(_schema):
     """A real Postgres session on empty tables."""
     with engine.begin() as conn:
-        conn.execute(text("truncate order_items, orders, products, users restart identity cascade"))
+        conn.execute(text("truncate cart_items, order_items, orders, products, users restart identity cascade"))
     session = SessionLocal()
     yield session
     session.close()

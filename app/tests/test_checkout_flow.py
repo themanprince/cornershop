@@ -6,8 +6,8 @@ import pytest
 from sqlalchemy import select
 
 from app.models import Order, Product
-from app.services import payments
-from app.tests.conftest import make_product, make_user, needs_db, read_session, sign_in
+from app.services import cart, payments
+from app.tests.conftest import make_product, make_user, needs_db, sign_in
 
 pytestmark = needs_db
 
@@ -75,7 +75,7 @@ def test_add_to_cart_caps_quantity_at_stock(db, db_client, buyer):
     rice = make_product(db, stock=3)
     resp = db_client.post("/cart/add", data={"product_id": rice.id, "qty": 10})
     assert resp.status_code == 303 and resp.headers["location"] == "/cart"
-    assert read_session(db_client)["cart"] == {str(rice.id): 3}
+    assert cart.get_cart(db, buyer.id) == {rice.id: 3}
 
 
 def test_cannot_add_inactive_product(db, db_client, buyer):
@@ -94,7 +94,7 @@ def test_update_cart_to_zero_removes_item(db, db_client, buyer):
     rice = make_product(db)
     db_client.post("/cart/add", data={"product_id": rice.id, "qty": 2})
     db_client.post("/cart/update", data={"product_id": rice.id, "qty": 0})
-    assert read_session(db_client).get("cart") == {}
+    assert cart.get_cart(db, buyer.id) == {}
 
 
 def test_navbar_shows_cart_count(db, db_client, buyer):
@@ -133,7 +133,7 @@ def test_checkout_creates_pending_order_and_redirects_to_paystack(db, db_client,
         }
     ]
     # The cart is kept until payment is confirmed.
-    assert read_session(db_client)["cart"] == {str(rice.id): 2}
+    assert cart.get_cart(db, buyer.id) == {rice.id: 2}
 
 
 def test_checkout_rejects_quantity_above_current_stock(db, db_client, buyer, paystack):
@@ -166,7 +166,7 @@ def test_paystack_init_failure_shows_error_and_keeps_cart(db, db_client, buyer, 
 
     resp = checkout(db_client)
     assert resp.headers["location"] == "/checkout"
-    assert read_session(db_client)["cart"] == {str(rice.id): 1}
+    assert cart.get_cart(db, buyer.id) == {rice.id: 1}
 
 
 # ---- callback ------------------------------------------------------------------
@@ -193,7 +193,7 @@ def test_callback_marks_paid_clears_cart_and_emails(db, db_client, buyer, paysta
     assert resp.status_code == 200 and "Payment successful" in resp.text
     assert only_order(db).status == "paid"
     assert stock_of(db, rice) == 3
-    assert read_session(db_client).get("cart") in (None, {})
+    assert cart.get_cart(db, buyer.id) == {}
     assert emails == [(buyer.email, f"Order #{order.id} confirmed")]
 
 
@@ -207,7 +207,7 @@ def test_callback_with_wrong_amount_does_not_mark_paid(db, db_client, buyer, pay
     assert only_order(db).status == "pending"
     assert stock_of(db, rice) == 5
     assert emails == []
-    assert read_session(db_client)["cart"]  # kept so they can retry
+    assert cart.get_cart(db, buyer.id)  # kept so they can retry
 
 
 def test_callback_for_abandoned_payment_offers_retry(db, db_client, buyer, paystack):

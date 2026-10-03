@@ -67,27 +67,29 @@ def shop(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/products/{product_id}")
-def product_detail(product_id: int, request: Request, db: Session = Depends(get_db)):
+def product_detail(
+    product_id: int, request: Request, db: Session = Depends(get_db), user: dict = Depends(require_user)
+):
     product = _active_product(db, product_id)
-    in_cart = cart.get_cart(request.session).get(product.id, 0)
+    in_cart = cart.get_cart(db, user["id"]).get(product.id, 0)
     return templates.TemplateResponse(
         request, "shop/product.html", {"product": product, "in_cart": in_cart}
     )
 
 
 @router.get("/cart")
-def cart_page(request: Request, db: Session = Depends(get_db)):
-    summary = cart.load_cart(db, request.session)
+def cart_page(request: Request, db: Session = Depends(get_db), user: dict = Depends(require_user)):
+    summary = cart.load_cart(db, user["id"])
     return templates.TemplateResponse(request, "shop/cart.html", {"summary": summary})
 
 
 @router.post("/cart/add")
-async def cart_add(request: Request, db: Session = Depends(get_db)):
+async def cart_add(request: Request, db: Session = Depends(get_db), user: dict = Depends(require_user)):
     form = await request.form()
     product = _active_product(db, form_int(form, "product_id"))
     wanted = form_int(form, "qty", 1)
-    before = cart.get_cart(request.session).get(product.id, 0)
-    in_cart = cart.add_item(request.session, product.id, wanted, stock=product.stock)
+    before = cart.get_cart(db, user["id"]).get(product.id, 0)
+    in_cart = cart.add_item(db, user["id"], product.id, wanted, stock=product.stock)
     if in_cart == 0:
         flash(request, f"Sorry, “{product.name}” is out of stock.", "warning")
     elif in_cart - before < wanted:
@@ -98,12 +100,12 @@ async def cart_add(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/cart/update")
-async def cart_update(request: Request, db: Session = Depends(get_db)):
+async def cart_update(request: Request, db: Session = Depends(get_db), user: dict = Depends(require_user)):
     form = await request.form()
     product_id = form_int(form, "product_id")
     product = db.get(Product, product_id)
     stock = product.stock if product is not None and product.is_active else 0
-    cart.set_quantity(request.session, product_id, form_int(form, "qty"), stock=stock)
+    cart.set_quantity(db, user["id"], product_id, form_int(form, "qty"), stock=stock)
     return RedirectResponse("/cart", status_code=303)
 
 
@@ -118,7 +120,7 @@ def _render_checkout(request: Request, summary, values: dict, errors: dict, stat
 
 @router.get("/checkout")
 def checkout_page(request: Request, db: Session = Depends(get_db), user: dict = Depends(require_user)):
-    summary = cart.load_cart(db, request.session)
+    summary = cart.load_cart(db, user["id"])
     if not summary.ok:
         return _back_to_cart(request, summary)
     values = request.session.get(SHIPPING_SESSION_KEY) or {
@@ -133,8 +135,8 @@ def checkout_page(request: Request, db: Session = Depends(get_db), user: dict = 
 async def checkout_submit(
     request: Request, db: Session = Depends(get_db), user: dict = Depends(require_user)
 ):
-    # Prices and stock always come from the database, never from the form or cookie.
-    summary = cart.load_cart(db, request.session)
+    # Prices and stock always come from the database, never from the form.
+    summary = cart.load_cart(db, user["id"])
     if not summary.ok:
         return _back_to_cart(request, summary)
 
