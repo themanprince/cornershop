@@ -50,7 +50,9 @@ class RequireLoginMiddleware(BaseHTTPMiddleware):
             or "user_id" in request.session
         ):
             return await call_next(request)
-        if request.method == "GET":
+        # Only remember real page visits. Browsers also fetch things like /favicon.ico
+        # in the background, and those must not become the post-sign-in destination.
+        if request.method == "GET" and "text/html" in request.headers.get("accept", ""):
             target = path + (f"?{request.url.query}" if request.url.query else "")
             request.session["next"] = safe_next(target)
         return RedirectResponse("/login", status_code=303)

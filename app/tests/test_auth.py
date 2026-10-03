@@ -2,7 +2,23 @@ import pytest
 
 from app.auth import safe_next
 from app.routes import auth_routes
-from app.tests.conftest import sign_in
+from app.tests.conftest import read_session, sign_in
+
+# What browsers send when the user opens a page, versus when they fetch a favicon.
+PAGE = {"Accept": "text/html,application/xhtml+xml,*/*;q=0.8"}
+IMAGE = {"Accept": "image/avif,image/webp,image/*,*/*;q=0.8"}
+
+
+def test_anonymous_page_visit_is_remembered_for_after_sign_in(client):
+    client.get("/products/5?x=1", headers=PAGE)
+    assert read_session(client)["next"] == "/products/5?x=1"
+
+
+def test_background_asset_fetch_does_not_replace_the_remembered_page(client):
+    # The login page makes the browser fetch /favicon.ico; signing in must not then land on it.
+    client.get("/products/5", headers=PAGE)
+    client.get("/favicon.ico", headers=IMAGE)
+    assert read_session(client)["next"] == "/products/5"
 
 
 def test_anonymous_visitor_is_sent_to_login(client):
